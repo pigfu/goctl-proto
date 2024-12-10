@@ -3,11 +3,13 @@ package proto
 import (
 	"fmt"
 	"github.com/zeromicro/go-zero/tools/goctl/api/spec"
+	"regexp"
 	"strings"
 )
 
 var (
 	emptyMessage     = Message{"Empty", nil, nil}
+	arrayReg         = regexp.MustCompile(`\[\d+]`)
 	fieldTypeNameMap = func() map[string]string {
 		basic := map[string]string{
 			"float64":     "double",
@@ -24,21 +26,12 @@ var (
 			"uint64":      "uint64",
 			"bool":        "bool",
 			"string":      "string",
-			"byte":        "uint32",
-			"*byte":       "uint32",
-			"[]byte":      "bytes",
-			"*[]byte":     "bytes",
-			"[]*byte":     "bytes",
-			"*[]*byte":    "bytes",
 			"any":         "bytes", // todo: use google.protobuf.Any
 			"interface{}": "bytes",
 		}
 		result := make(map[string]string)
 		for goType, protoType := range basic {
 			result[goType] = protoType
-			if strings.Contains(goType, "byte") {
-				continue
-			}
 			for _, prefix := range []string{
 				"*", "[]", "*[]", "[]*", "*[]*",
 			} {
@@ -47,6 +40,14 @@ var (
 		}
 		return result
 	}()
+	byteFieldNameMap = map[string]string{
+		"byte":     "uint32",
+		"*byte":    "uint32",
+		"[]byte":   "bytes",
+		"*[]byte":  "bytes",
+		"[]*byte":  "bytes",
+		"*[]*byte": "bytes",
+	}
 	mapKeyTypeNameMap = func() map[string]string {
 		basic := map[string]string{
 			"int":    "int32",
@@ -146,18 +147,22 @@ func (v *MessageField) Unmarshal(data any) error {
 		if comment := strings.TrimSpace(strings.TrimPrefix(val.GetComment(), "//")); comment != "" {
 			v.Descs = append(v.Descs, comment)
 		}
-		if name, exist := fieldTypeNameMap[val.Type.Name()]; exist {
+		typeName := arrayReg.ReplaceAllString(val.Type.Name(), "[]")
+		if name, exist := fieldTypeNameMap[typeName]; exist {
 			v.TypeName = name
-		} else if strings.Contains(val.Type.Name(), "map[") {
-			name, err := parseMapField(val.Type.Name())
+			v.Repeated = strings.Contains(typeName, "[]")
+		} else if name, exist = byteFieldNameMap[typeName]; exist {
+			v.TypeName = name
+		} else if strings.Contains(typeName, "map[") {
+			name, err := parseMapField(typeName)
 			if err != nil {
 				return fmt.Errorf("parse map field %s falied, %w", val.Name, err)
 			}
 			v.TypeName = name
 		} else {
-			v.TypeName = strings.ReplaceAll(strings.ReplaceAll(val.Type.Name(), "*", ""), "[]", "")
+			v.TypeName = strings.ReplaceAll(strings.ReplaceAll(typeName, "*", ""), "[]", "")
+			v.Repeated = strings.Contains(typeName, "[]")
 		}
-		v.Repeated = strings.Contains(val.Type.Name(), "[]")
 		// todo: parse member.Tag
 	default:
 		return fmt.Errorf("unsupported type %T, only supported *spec.Member", data)
@@ -177,7 +182,10 @@ func parseMapField(typeName string) (string, error) {
 	if mapKeyTypeNameMap[mapKV[0]] == "" {
 		mapKV[0] = "string"
 	}
-	if strings.Contains(mapKV[1], "[") {
+	mapKV[1] = arrayReg.ReplaceAllString(mapKV[1], "[]")
+	if byteFieldNameMap[mapKV[1]] != "" {
+		mapKV[1] = byteFieldNameMap[mapKV[1]]
+	} else if strings.Contains(mapKV[1], "[") {
 		mapKV[1] = "bytes"
 	} else if fieldTypeNameMap[mapKV[1]] != "" {
 		mapKV[1] = fieldTypeNameMap[mapKV[1]]
