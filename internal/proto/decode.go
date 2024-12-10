@@ -174,13 +174,16 @@ func parseMapField(typeName string) (string, error) {
 		return "", fmt.Errorf("unsupported field type %s", typeName)
 	}
 	mapKV := strings.SplitN(after, "]", 2)
-	if mapKeyTypeNameMap[mapKV[0]] == "" || strings.Contains(mapKV[1], "[") {
-		return "", fmt.Errorf("unsupported field type %s", typeName)
+	if mapKeyTypeNameMap[mapKV[0]] == "" {
+		mapKV[0] = "string"
 	}
-	if fieldTypeNameMap[mapKV[1]] != "" {
+	if strings.Contains(mapKV[1], "[") {
+		mapKV[1] = "bytes"
+	} else if fieldTypeNameMap[mapKV[1]] != "" {
 		mapKV[1] = fieldTypeNameMap[mapKV[1]]
 	} else {
 		mapKV[1] = strings.ReplaceAll(mapKV[1], "*", "")
 	}
+
 	return fmt.Sprintf("map<%s,%s>", mapKeyTypeNameMap[mapKV[0]], mapKV[1]), nil
 }
