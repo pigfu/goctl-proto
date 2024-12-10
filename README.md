@@ -92,11 +92,13 @@ goctl rpc protoc ./service.proto --go_out=./service --go-grpc_out=./service --zr
 
 1. 支持生成的protobuf只支持proto3。
 
-2. 一些在protobuf中不存在/不支持的数据类型会转换为bytes，例如interface{}、any、map键使用float等等。
+2. 一些在protobuf中不存在/不支持的数据类型会转换为bytes，例如interface{}、any等等。
 
 3. 不支持按照api中的import的文件分别生成proto文件，并且不会生成类似google.protobuf.Any和google.protobuf.Empty这种类型的数据类型，但不排除以后支持，原因见[这里](https://go-zero.dev/docs/tutorials/proto/faq#2-%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BD%BF%E7%94%A8-goctl-%E7%94%9F%E6%88%90-grpc-%E4%BB%A3%E7%A0%81%E6%97%B6-proto-%E4%B8%8D%E6%94%AF%E6%8C%81%E4%BD%BF%E7%94%A8%E5%8C%85%E5%A4%96-proto-%E5%92%8C-service)。
 
 4. 在api文件中声明的type类型的备注信息不会被复制到proto文件中，原因是目前使用的goctl v1.6.5并没有支持解析这类备注，但不排除以后支持。
+
+5. 所有protobuf的map键不支持的类型会转化为string，不支持的值会转化为bytes，例如map[float32]\[]string会转为map\<string,bytes>
 
 ## TODO
 
