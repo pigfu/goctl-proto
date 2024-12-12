@@ -5,13 +5,13 @@ const (
 	Version3 = "proto3"
 )
 
-// File todo: group services
+// File
 type File struct {
 	Syntax   string
 	Package  string
 	Options  []*Option
 	Messages []*Message
-	*Service
+	Services []*Service
 }
 
 type Option struct {

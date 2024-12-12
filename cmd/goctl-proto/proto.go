@@ -48,7 +48,7 @@ func protoGen(ctx context.Context, command *cli.Command) (err error) {
 		}
 		output = filepath.Join(output, strings.TrimSuffix(apiFile, filepath.Ext(apiFile))+".proto")
 	}
-	pf, err := proto.Unmarshal(goctlPlugin.Api)
+	pf, err := proto.Unmarshal(goctlPlugin.Api, command.Bool("multiple"))
 	if err != nil {
 		return err
 	}

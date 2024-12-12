@@ -5,6 +5,7 @@ import (
 	"golang.org/x/text/language"
 	"strings"
 	"text/template"
+	"unicode"
 )
 
 var fileTemplate = `syntax = "{{ .Syntax }}";
@@ -30,10 +31,12 @@ message {{ title .Name }} { {{- if eq $fieldCount 0 -}} }{{ else }}
 }
 {{- end }}
 {{- end }}
-{{ range .Service.Descs }}
+
+{{- range .Services }}
+{{ range .Descs }}
 // {{ . }}
 {{- end }}
-service {{ title .Service.Name }} {
+service {{ title .Name }} {
 {{- range .Rpcs }}
 {{- range .Descs }}
     // {{ . }}
@@ -41,6 +44,7 @@ service {{ title .Service.Name }} {
     rpc {{ title .Name }} ({{ if ne .Request nil }}{{ .Request.Name }}{{ else }}Empty{{ end }}) returns ({{ if ne .Response nil }}{{ .Response.Name }}{{ else }}Empty{{ end }});
 {{- end }}
 }
+{{- end }}
 `
 
 var funcMap = template.FuncMap{
@@ -50,7 +54,9 @@ var funcMap = template.FuncMap{
 	"title": func() func(string) string {
 		caser := cases.Title(language.English, cases.NoLower)
 		return func(s string) string {
-			ss := strings.Split(s, "-")
+			ss := strings.FieldsFunc(s, func(c rune) bool {
+				return !unicode.IsLetter(c) && !unicode.IsNumber(c)
+			})
 			for i := range ss {
 				ss[i] = caser.String(ss[i])
 			}

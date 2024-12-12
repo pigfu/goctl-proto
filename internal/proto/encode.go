@@ -17,7 +17,7 @@ func (f *File) Marshal() ([]byte, error) {
 
 // Refine todo: remove unused message in message fields
 func (f *File) Refine(includeRpcs, excludeRpcs []string) *File {
-	if f == nil || f.Service == nil || len(f.Service.Rpcs) == 0 {
+	if f == nil || len(f.Services) == 0 {
 		return f
 	}
 	if len(includeRpcs) > 0 {
@@ -25,47 +25,56 @@ func (f *File) Refine(includeRpcs, excludeRpcs []string) *File {
 		for _, rpc := range includeRpcs {
 			includes[rpc] = true
 		}
-		newRpcs := make([]*ServiceRpc, 0, len(includeRpcs))
-		for _, rpc := range f.Service.Rpcs {
-			if !includes[rpc.Name] {
-				continue
+		for _, service := range f.Services {
+			newRpcs := make([]*ServiceRpc, 0, len(includeRpcs))
+			for _, rpc := range service.Rpcs {
+				if !includes[rpc.Name] {
+					continue
+				}
+				newRpcs = append(newRpcs, rpc)
 			}
-			newRpcs = append(newRpcs, rpc)
+			service.Rpcs = newRpcs
 		}
-		f.Service.Rpcs = newRpcs
 	} else {
 		excludes := make(map[string]bool, len(excludeRpcs))
 		for _, rpc := range excludeRpcs {
 			excludes[rpc] = true
 		}
 		// find rpc which desc contains @goctl-proto
-		preRpcs := make([]*ServiceRpc, 0, len(f.Service.Rpcs))
-		for _, rpc := range f.Service.Rpcs {
-			if strings.Contains(strings.Join(rpc.Descs, " "), "@goctl-proto") {
-				for i := range rpc.Descs {
-					rpc.Descs[i] = strings.TrimSpace(strings.ReplaceAll(rpc.Descs[i], "@goctl-proto", ""))
+		for _, service := range f.Services {
+			preRpcs := make([]*ServiceRpc, 0, len(service.Rpcs))
+			for _, rpc := range service.Rpcs {
+				if strings.Contains(strings.Join(rpc.Descs, " "), "@goctl-proto") {
+					for i := range rpc.Descs {
+						rpc.Descs[i] = strings.TrimSpace(strings.ReplaceAll(rpc.Descs[i], "@goctl-proto", ""))
+					}
+					preRpcs = append(preRpcs, rpc)
 				}
-				preRpcs = append(preRpcs, rpc)
+			}
+			if len(preRpcs) > 0 {
+				service.Rpcs = preRpcs
 			}
 		}
-		if len(preRpcs) > 0 {
-			f.Service.Rpcs = preRpcs
-		}
-		for i := 0; i < len(f.Service.Rpcs); i++ {
-			if !excludes[f.Service.Rpcs[i].Name] {
-				continue
+
+		for _, service := range f.Services {
+			for i := 0; i < len(service.Rpcs); i++ {
+				if !excludes[service.Rpcs[i].Name] {
+					continue
+				}
+				service.Rpcs = append(service.Rpcs[:i:cap(service.Rpcs)-1], service.Rpcs[i+1:]...)
+				i--
 			}
-			f.Service.Rpcs = append(f.Service.Rpcs[:i:cap(f.Service.Rpcs)-1], f.Service.Rpcs[i+1:]...)
-			i--
 		}
 	}
 
 	messageUsage := make(map[string]bool)
-	for _, rpc := range f.Service.Rpcs {
-		messageUsage[rpc.Request.Name], messageUsage[rpc.Response.Name] = true, true
-		for _, field := range append(rpc.Request.Fields, rpc.Response.Fields...) {
-			for _, name := range field.BaseTypeNames {
-				messageUsage[name] = true
+	for _, service := range f.Services {
+		for _, rpc := range service.Rpcs {
+			messageUsage[rpc.Request.Name], messageUsage[rpc.Response.Name] = true, true
+			for _, field := range append(rpc.Request.Fields, rpc.Response.Fields...) {
+				for _, name := range field.BaseTypeNames {
+					messageUsage[name] = true
+				}
 			}
 		}
 	}

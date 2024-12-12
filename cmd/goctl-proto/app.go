@@ -42,6 +42,11 @@ goctl api plugin -plugin goctl-proto="proto" -api ./example/api/service.api -dir
 					Aliases: []string{"exc"},
 					Usage:   "exclude handler in api file",
 				},
+				&cli.BoolFlag{
+					Name:    "multiple",
+					Aliases: []string{"m"},
+					Usage:   "output multiple service by api server group",
+				},
 			},
 			Action: protoGen,
 		},

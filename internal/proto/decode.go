@@ -76,7 +76,7 @@ var (
 	}()
 )
 
-func Unmarshal(data any) (f *File, err error) {
+func Unmarshal(data any, multiple bool) (f *File, err error) {
 	switch val := data.(type) {
 	case *spec.ApiSpec:
 		f = &File{
@@ -88,7 +88,7 @@ func Unmarshal(data any) (f *File, err error) {
 					Value: "/protoc-gen-go",
 				},
 			},
-			Service: &Service{Name: val.Service.Name},
+			Services: []*Service{{Name: val.Service.Name}},
 		}
 		messageMap := make(map[string]*Message, len(val.Types))
 		for _, typ := range val.Types {
@@ -107,6 +107,13 @@ func Unmarshal(data any) (f *File, err error) {
 			messageMap[message.Name] = &message
 		}
 		for _, group := range val.Service.JoinPrefix().Groups {
+			var srv *Service
+			if groupName := group.GetAnnotation("group"); groupName != "" && multiple {
+				srv = &Service{Name: val.Service.Name + "/" + groupName}
+				f.Services = append(f.Services, srv)
+			} else {
+				srv = f.Services[0]
+			}
 			for _, route := range group.Routes {
 				var rpc ServiceRpc
 				rpc.Name = route.Handler
@@ -130,7 +137,7 @@ func Unmarshal(data any) (f *File, err error) {
 					}
 					rpc.Response = &emptyMessage
 				}
-				f.Service.Rpcs = append(f.Service.Rpcs, &rpc)
+				srv.Rpcs = append(srv.Rpcs, &rpc)
 			}
 		}
 	default:

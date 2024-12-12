@@ -44,15 +44,29 @@ func TestFile_Marshal(t *testing.T) {
 	f := File{
 		Syntax:   "proto3",
 		Messages: []*Message{&reqMessage, &respMessage},
-		Service: &Service{
-			Name:  "fileEncoder",
-			Descs: []string{"FileEncoder Description", "This is a mock service"},
-			Rpcs: []*ServiceRpc{
-				{
-					Name:     "doRequest",
-					Descs:    []string{"Do Api Description"},
-					Request:  &reqMessage,
-					Response: &respMessage,
+		Services: []*Service{
+			{
+				Name:  "fileEncoder",
+				Descs: []string{"FileEncoder Description", "This is a mock service"},
+				Rpcs: []*ServiceRpc{
+					{
+						Name:     "doRequest",
+						Descs:    []string{"Do Api Description"},
+						Request:  &reqMessage,
+						Response: &respMessage,
+					},
+				},
+			},
+			{
+				Name: "fileDecoder",
+				//Descs: []string{"FileDecoder Description", "This is a mock service"},
+				Rpcs: []*ServiceRpc{
+					{
+						Name:     "doRequest",
+						Descs:    []string{"Do Api Description"},
+						Request:  &reqMessage,
+						Response: &respMessage,
+					},
 				},
 			},
 		},
