@@ -147,6 +147,7 @@ func (v *MessageField) Unmarshal(data any) error {
 		if comment := strings.TrimSpace(strings.TrimPrefix(val.GetComment(), "//")); comment != "" {
 			v.Descs = append(v.Descs, comment)
 		}
+		v.BaseTypeNames = parseBaseType(val.Type.Name())
 		typeName := arrayReg.ReplaceAllString(val.Type.Name(), "[]")
 		if name, exist := fieldTypeNameMap[typeName]; exist {
 			v.TypeName = name
@@ -194,4 +195,21 @@ func parseMapField(typeName string) (string, error) {
 	}
 
 	return fmt.Sprintf("map<%s,%s>", mapKeyTypeNameMap[mapKV[0]], mapKV[1]), nil
+}
+
+func parseBaseType(typeStr string) (baseTypes []string) {
+	typeStr = arrayReg.ReplaceAllString(typeStr, "[]")
+	typeStr = strings.ReplaceAll(typeStr, "map[", " ")
+	typeStr = strings.ReplaceAll(typeStr, "[]", " ")
+	typeStr = strings.ReplaceAll(typeStr, "]", " ")
+	typeStr = strings.ReplaceAll(typeStr, "*", " ")
+	typMap := make(map[string]bool)
+	for _, typ := range strings.Split(typeStr, " ") {
+		if typ == "" || typMap[typ] {
+			continue
+		}
+		baseTypes = append(baseTypes, typ)
+		typMap[typ] = true
+	}
+	return
 }

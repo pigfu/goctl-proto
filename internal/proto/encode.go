@@ -20,7 +20,6 @@ func (f *File) Refine(includeRpcs, excludeRpcs []string) *File {
 	if f == nil || f.Service == nil || len(f.Service.Rpcs) == 0 {
 		return f
 	}
-	messageUsage := make(map[*Message]int32, len(f.Messages))
 	if len(includeRpcs) > 0 {
 		includes := make(map[string]bool, len(includeRpcs))
 		for _, rpc := range includeRpcs {
@@ -29,12 +28,8 @@ func (f *File) Refine(includeRpcs, excludeRpcs []string) *File {
 		newRpcs := make([]*ServiceRpc, 0, len(includeRpcs))
 		for _, rpc := range f.Service.Rpcs {
 			if !includes[rpc.Name] {
-				messageUsage[rpc.Request] = max(messageUsage[rpc.Request], 0)
-				messageUsage[rpc.Response] = max(messageUsage[rpc.Response], 0)
 				continue
 			}
-			messageUsage[rpc.Request]++
-			messageUsage[rpc.Response]++
 			newRpcs = append(newRpcs, rpc)
 		}
 		f.Service.Rpcs = newRpcs
@@ -52,30 +47,31 @@ func (f *File) Refine(includeRpcs, excludeRpcs []string) *File {
 				}
 				preRpcs = append(preRpcs, rpc)
 			}
-			messageUsage[rpc.Request] = 0
-			messageUsage[rpc.Response] = 0
 		}
 		if len(preRpcs) > 0 {
 			f.Service.Rpcs = preRpcs
 		}
-		for _, rpc := range f.Service.Rpcs {
-			messageUsage[rpc.Request]++
-			messageUsage[rpc.Response]++
-		}
 		for i := 0; i < len(f.Service.Rpcs); i++ {
-			rpc := f.Service.Rpcs[i]
-			if !excludes[rpc.Name] {
+			if !excludes[f.Service.Rpcs[i].Name] {
 				continue
 			}
-			messageUsage[rpc.Request]--
-			messageUsage[rpc.Response]--
 			f.Service.Rpcs = append(f.Service.Rpcs[:i:cap(f.Service.Rpcs)-1], f.Service.Rpcs[i+1:]...)
 			i--
 		}
 	}
 
+	messageUsage := make(map[string]bool)
+	for _, rpc := range f.Service.Rpcs {
+		messageUsage[rpc.Request.Name], messageUsage[rpc.Response.Name] = true, true
+		for _, field := range append(rpc.Request.Fields, rpc.Response.Fields...) {
+			for _, name := range field.BaseTypeNames {
+				messageUsage[name] = true
+			}
+		}
+	}
+
 	for i := 0; i < len(f.Messages); i++ {
-		if cnt, exist := messageUsage[f.Messages[i]]; !exist || cnt > 0 {
+		if messageUsage[f.Messages[i].Name] {
 			continue
 		}
 		f.Messages = append(f.Messages[:i:cap(f.Messages)-1], f.Messages[i+1:]...)

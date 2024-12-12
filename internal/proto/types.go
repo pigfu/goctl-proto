@@ -26,11 +26,11 @@ type Message struct {
 }
 
 type MessageField struct {
-	Name     string
-	Descs    []string
-	Type     any
-	TypeName string
-	Repeated bool
+	Name          string
+	Descs         []string
+	TypeName      string
+	Repeated      bool
+	BaseTypeNames []string
 }
 
 type Service struct {
