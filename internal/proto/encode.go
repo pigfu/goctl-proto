@@ -2,6 +2,7 @@ package proto
 
 import (
 	"bytes"
+	"strings"
 	"text/template"
 )
 
@@ -16,7 +17,7 @@ func (f *File) Marshal() ([]byte, error) {
 
 // Refine todo: remove unused message in message fields
 func (f *File) Refine(includeRpcs, excludeRpcs []string) *File {
-	if f == nil || f.Service == nil || len(f.Service.Rpcs) == 0 || (len(includeRpcs) == 0 && len(excludeRpcs) == 0) {
+	if f == nil || f.Service == nil || len(f.Service.Rpcs) == 0 {
 		return f
 	}
 	messageUsage := make(map[*Message]int32, len(f.Messages))
@@ -41,6 +42,21 @@ func (f *File) Refine(includeRpcs, excludeRpcs []string) *File {
 		excludes := make(map[string]bool, len(excludeRpcs))
 		for _, rpc := range excludeRpcs {
 			excludes[rpc] = true
+		}
+		// find rpc which desc contains @goctl-proto
+		preRpcs := make([]*ServiceRpc, 0, len(f.Service.Rpcs))
+		for _, rpc := range f.Service.Rpcs {
+			if strings.Contains(strings.Join(rpc.Descs, " "), "@goctl-proto") {
+				for i := range rpc.Descs {
+					rpc.Descs[i] = strings.TrimSpace(strings.ReplaceAll(rpc.Descs[i], "@goctl-proto", ""))
+				}
+				preRpcs = append(preRpcs, rpc)
+			}
+			messageUsage[rpc.Request] = 0
+			messageUsage[rpc.Response] = 0
+		}
+		if len(preRpcs) > 0 {
+			f.Service.Rpcs = preRpcs
 		}
 		for _, rpc := range f.Service.Rpcs {
 			messageUsage[rpc.Request]++
