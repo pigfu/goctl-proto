@@ -43,3 +43,13 @@ goctl api plugin -plugin goctl-proto="proto" -api ./example/api/service@goctl-pr
 ```
 
 [点击此处](https://github.com/liferod/goctl-proto/blob/main/example/proto/4_@goctl-proto.proto)查看生成的proto文件。
+
+## 生成带分组的rpc
+
+```
+goctl-proto proto --input ./example/api/service.api --output ./example/proto -m
+或者
+goctl api plugin -plugin goctl-proto="proto -m" -api ./example/api/service.api -dir ./example/proto
+```
+
+[点击此处](https://github.com/liferod/goctl-proto/blob/main/example/proto/5_group.proto)查看生成的proto文件。
