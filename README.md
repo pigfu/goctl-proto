@@ -7,7 +7,7 @@
 ## 安装
 
 ```go
-go install github.com/liferod/goctl-proto@latest
+go install github.com/liferod/goctl-proto/cmd/goctl-proto@latest
 ```
 
 ## 示例

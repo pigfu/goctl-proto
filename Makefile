@@ -4,14 +4,14 @@ all: build run goctl rpc
 
 build:
 	go vet ./...
-	go build -ldflags "-X main.buildTime=`date +%Y-%m-%dT%H:%M:%S`" -o ./releases/goctl-proto ./cmd/proto
+	go build -ldflags "-X main.buildTime=`date +%Y-%m-%dT%H:%M:%S`" -o ./releases/goctl-proto ./cmd/goctl-proto
 
 run:
 	@if [ -x "./releases/goctl-proto" ]; \
     then \
         ./releases/goctl-proto proto --input ./example/api/service.api --output ./example/proto; \
     else \
-        go run ./cmd/proto/*.go proto --input ./example/api/service.api --output ./example/proto; \
+        go run ./cmd/goctl-proto/*.go proto --input ./example/api/service.api --output ./example/proto; \
     fi
 
 goctl:
