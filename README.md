@@ -102,7 +102,7 @@ goctl rpc protoc ./service.proto --go_out=./service --go-grpc_out=./service --zr
 
 ## TODO
 
-- 支持对proto中的service分组
+- 支持对proto中的service分组 ✅
 - 支持导出字段的tag
 - 导出rpc时更深度的清理未被使用的message ✅
 - 支持导出描述信息中包含@goctl-proto的rpc ✅
