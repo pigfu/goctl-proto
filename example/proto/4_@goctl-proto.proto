@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package mocker.api;
+option go_package = "/protoc-gen-go";
+
+message Empty {}
+
+message ExtraInfo {
+    // 内容
+    string Content = 1;
+}
+
+message GetMockRequest {
+    // ID
+    int64 Id = 1;
+}
+
+message Mock {
+    // ID
+    int64 Id = 1;
+    // 名称
+    string Name = 2;
+    // 类型
+    int32 Type = 3;
+    // 标签列表
+    repeated string Tags = 4;
+    // 额外信息
+    map<string,ExtraInfo> ExtraInfos = 5;
+}
+
+service MockerApi {
+    // Ping
+    rpc Ping (Empty) returns (Empty);
+    // 查询
+    rpc GetMock (GetMockRequest) returns (Mock);
+}
