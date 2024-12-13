@@ -15,7 +15,7 @@ func (f *File) Marshal() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// Refine todo: remove unused message in message fields
+// Refine refine messages and rpcs
 func (f *File) Refine(includeRpcs, excludeRpcs []string) *File {
 	if f == nil || len(f.Services) == 0 {
 		return f
@@ -67,20 +67,42 @@ func (f *File) Refine(includeRpcs, excludeRpcs []string) *File {
 		}
 	}
 
-	messageUsage := make(map[string]bool)
+	messageCustomTypeNames := make(map[string][]string, len(f.Messages))
+	for _, message := range f.Messages {
+		for _, field := range message.Fields {
+			messageCustomTypeNames[message.Name] = append(messageCustomTypeNames[message.Name], field.CustomTypeNames...)
+		}
+	}
+
+	usedMessages := make(map[string]bool)
 	for _, service := range f.Services {
 		for _, rpc := range service.Rpcs {
-			messageUsage[rpc.Request.Name], messageUsage[rpc.Response.Name] = true, true
-			for _, field := range append(rpc.Request.Fields, rpc.Response.Fields...) {
-				for _, name := range field.CustomTypeNames {
-					messageUsage[name] = true
+			usedMessages[rpc.Request.Name], usedMessages[rpc.Response.Name] = true, true
+			var (
+				customTypeNames    = append(messageCustomTypeNames[rpc.Request.Name], messageCustomTypeNames[rpc.Response.Name]...)
+				tmpCustomTypeNames = make([]string, 0)
+				hasNewMessage      bool
+			)
+		pickUsedCustomMessageLoop:
+			for _, customTypeName := range customTypeNames {
+				if usedMessages[customTypeName] {
+					continue
 				}
+				hasNewMessage = true
+				usedMessages[customTypeName] = true
+				tmpCustomTypeNames = append(tmpCustomTypeNames, messageCustomTypeNames[customTypeName]...)
+			}
+			if hasNewMessage && len(tmpCustomTypeNames) > 0 {
+				hasNewMessage = false
+				customTypeNames = tmpCustomTypeNames
+				tmpCustomTypeNames = tmpCustomTypeNames[0:0]
+				goto pickUsedCustomMessageLoop
 			}
 		}
 	}
 
 	for i := 0; i < len(f.Messages); i++ {
-		if messageUsage[f.Messages[i].Name] {
+		if usedMessages[f.Messages[i].Name] {
 			continue
 		}
 		f.Messages = append(f.Messages[:i:cap(f.Messages)-1], f.Messages[i+1:]...)
