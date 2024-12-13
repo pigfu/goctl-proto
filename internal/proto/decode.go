@@ -88,7 +88,6 @@ func Unmarshal(data any, multiple bool) (f *File, err error) {
 					Value: "/protoc-gen-go",
 				},
 			},
-			Services: []*Service{{Name: val.Service.Name}},
 		}
 		messageMap := make(map[string]*Message, len(val.Types))
 		for _, typ := range val.Types {
@@ -106,20 +105,23 @@ func Unmarshal(data any, multiple bool) (f *File, err error) {
 			f.Messages = append(f.Messages, &message)
 			messageMap[message.Name] = &message
 		}
-		groupMap := make(map[string]int)
+		serviceNameMap := make(map[string]int)
 		for _, group := range val.Service.JoinPrefix().Groups {
-			var srv *Service
+			var serviceName string
 			if groupName := group.GetAnnotation("group"); groupName != "" && multiple {
-				if srvIndex, exist := groupMap[groupName]; exist {
-					srv = f.Services[srvIndex]
-				} else {
-					srv = &Service{Name: val.Service.Name + "/" + groupName}
-					f.Services = append(f.Services, srv)
-					groupMap[groupName] = len(f.Services) - 1
-				}
+				serviceName = val.Service.Name + "/" + groupName
 			} else {
-				srv = f.Services[0]
+				serviceName = val.Service.Name
 			}
+			var srv *Service
+			if srvIndex, exist := serviceNameMap[serviceName]; exist {
+				srv = f.Services[srvIndex]
+			} else {
+				srv = &Service{Name: serviceName}
+				f.Services = append(f.Services, srv)
+				serviceNameMap[serviceName] = len(f.Services) - 1
+			}
+
 			for _, route := range group.Routes {
 				var rpc ServiceRpc
 				rpc.Name = route.Handler
