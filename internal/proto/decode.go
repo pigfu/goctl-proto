@@ -106,11 +106,17 @@ func Unmarshal(data any, multiple bool) (f *File, err error) {
 			f.Messages = append(f.Messages, &message)
 			messageMap[message.Name] = &message
 		}
+		groupMap := make(map[string]int)
 		for _, group := range val.Service.JoinPrefix().Groups {
 			var srv *Service
 			if groupName := group.GetAnnotation("group"); groupName != "" && multiple {
-				srv = &Service{Name: val.Service.Name + "/" + groupName}
-				f.Services = append(f.Services, srv)
+				if srvIndex, exist := groupMap[groupName]; exist {
+					srv = f.Services[srvIndex]
+				} else {
+					srv = &Service{Name: val.Service.Name + "/" + groupName}
+					f.Services = append(f.Services, srv)
+					groupMap[groupName] = len(f.Services) - 1
+				}
 			} else {
 				srv = f.Services[0]
 			}
