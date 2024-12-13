@@ -41,6 +41,7 @@ func (f *File) Refine(includeRpcs, excludeRpcs []string) *File {
 			excludes[rpc] = true
 		}
 		// find rpc which desc contains @goctl-proto
+		noFlagService := make(map[string]bool)
 		for _, service := range f.Services {
 			preRpcs := make([]*ServiceRpc, 0, len(service.Rpcs))
 			for _, rpc := range service.Rpcs {
@@ -53,6 +54,18 @@ func (f *File) Refine(includeRpcs, excludeRpcs []string) *File {
 			}
 			if len(preRpcs) > 0 {
 				service.Rpcs = preRpcs
+			} else {
+				noFlagService[service.Name] = true
+			}
+		}
+		// clean service rpcs which not contains @goctl-proto
+		if len(noFlagService) < len(f.Services) {
+			for i := 0; i < len(f.Services); i++ {
+				if !noFlagService[f.Services[i].Name] {
+					continue
+				}
+				f.Services = append(f.Services[:i:cap(f.Services)-1], f.Services[i+1:]...)
+				i--
 			}
 		}
 
