@@ -108,7 +108,7 @@ func (f *File) Refine(includeRpcs, excludeRpcs []string) *File {
 			if hasNewMessage && len(tmpCustomTypeNames) > 0 {
 				hasNewMessage = false
 				customTypeNames = tmpCustomTypeNames
-				tmpCustomTypeNames = tmpCustomTypeNames[0:0]
+				tmpCustomTypeNames = make([]string, 0)
 				goto pickUsedCustomMessageLoop
 			}
 		}
