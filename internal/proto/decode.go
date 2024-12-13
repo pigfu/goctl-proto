@@ -7,13 +7,20 @@ import (
 	"strings"
 )
 
+type fieldTypeName struct {
+	singular string
+	plural   string
+}
+
 var (
 	emptyMessage     = Message{"Empty", nil, nil}
 	arrayReg         = regexp.MustCompile(`\[\d+]`)
-	fieldTypeNameMap = func() map[string]string {
+	fieldTypeNameMap = func() map[string]fieldTypeName {
 		basic := map[string]string{
-			"float64":     "double",
 			"float32":     "float",
+			"float64":     "double",
+			"complex64":   "float",
+			"complex128":  "double",
 			"int":         "int32",
 			"int8":        "int32",
 			"int16":       "int32",
@@ -24,56 +31,44 @@ var (
 			"uint16":      "uint32",
 			"uint32":      "uint32",
 			"uint64":      "uint64",
+			"uintptr":     "uint64",
 			"bool":        "bool",
 			"string":      "string",
 			"any":         "bytes", // todo: use google.protobuf.Any
 			"interface{}": "bytes",
 		}
-		result := make(map[string]string)
+		result := make(map[string]fieldTypeName)
 		for goType, protoType := range basic {
-			result[goType] = protoType
-			for _, prefix := range []string{
-				"*", "[]", "*[]", "[]*", "*[]*",
-			} {
-				result[prefix+goType] = protoType
+			result[goType] = fieldTypeName{
+				singular: protoType,
+				plural:   protoType,
 			}
+		}
+		result["byte"] = fieldTypeName{
+			singular: "uint32",
+			plural:   "bytes",
+		}
+		result["rune"] = fieldTypeName{
+			singular: "uint32",
+			plural:   "bytes",
 		}
 		return result
 	}()
-	byteFieldNameMap = map[string]string{
-		"byte":     "uint32",
-		"*byte":    "uint32",
-		"[]byte":   "bytes",
-		"*[]byte":  "bytes",
-		"[]*byte":  "bytes",
-		"*[]*byte": "bytes",
+	mapKeyTypeNameMap = map[string]string{
+		"int":    "int32",
+		"int8":   "int32",
+		"int16":  "int32",
+		"int32":  "int32",
+		"int64":  "int64",
+		"uint":   "uint32",
+		"uint8":  "uint32",
+		"uint16": "uint32",
+		"uint32": "uint32",
+		"uint64": "uint64",
+		"string": "string",
+		"byte":   "uint32",
+		"rune":   "uint32",
 	}
-	mapKeyTypeNameMap = func() map[string]string {
-		basic := map[string]string{
-			"int":    "int32",
-			"int8":   "int32",
-			"int16":  "int32",
-			"int32":  "int32",
-			"int64":  "int64",
-			"uint":   "uint32",
-			"uint8":  "uint32",
-			"uint16": "uint32",
-			"uint32": "uint32",
-			"uint64": "uint64",
-			"string": "string",
-			"byte":   "uint32",
-		}
-		result := make(map[string]string)
-		for goType, protoType := range basic {
-			result[goType] = protoType
-			for _, prefix := range []string{
-				"*",
-			} {
-				result[prefix+goType] = protoType
-			}
-		}
-		return result
-	}()
 )
 
 func Unmarshal(data any, multiple bool) (f *File, err error) {
@@ -162,22 +157,13 @@ func (v *MessageField) Unmarshal(data any) error {
 		if comment := strings.TrimSpace(strings.TrimPrefix(val.GetComment(), "//")); comment != "" {
 			v.Descs = append(v.Descs, comment)
 		}
-		v.BaseTypeNames = parseBaseType(val.Type.Name())
-		typeName := arrayReg.ReplaceAllString(val.Type.Name(), "[]")
-		if name, exist := fieldTypeNameMap[typeName]; exist {
-			v.TypeName = name
-			v.Repeated = strings.Contains(typeName, "[]")
-		} else if name, exist = byteFieldNameMap[typeName]; exist {
-			v.TypeName = name
-		} else if strings.Contains(typeName, "map[") {
-			name, err := parseMapField(typeName)
-			if err != nil {
-				return fmt.Errorf("parse map field %s falied, %w", val.Name, err)
-			}
-			v.TypeName = name
+		typeName, typ, customTypes := parseFieldType(val.Type.Name())
+		v.CustomTypeNames = customTypes
+		if typ == MessageFieldTypeSlice {
+			v.Repeated = true
+			v.TypeName = typeName.plural
 		} else {
-			v.TypeName = strings.ReplaceAll(strings.ReplaceAll(typeName, "*", ""), "[]", "")
-			v.Repeated = strings.Contains(typeName, "[]")
+			v.TypeName = typeName.singular
 		}
 		// todo: parse member.Tag
 	default:
@@ -186,45 +172,88 @@ func (v *MessageField) Unmarshal(data any) error {
 	return nil
 }
 
-func parseMapField(typeName string) (string, error) {
-	before, after, found := strings.Cut(typeName, "map[")
-	if !found {
-		return "", fmt.Errorf("field type %s is not map", typeName)
-	}
-	if before != "" || !strings.Contains(after, "]") {
-		return "", fmt.Errorf("unsupported field type %s", typeName)
-	}
-	mapKV := strings.SplitN(after, "]", 2)
-	if mapKeyTypeNameMap[mapKV[0]] == "" {
-		mapKV[0] = "string"
-	}
-	mapKV[1] = arrayReg.ReplaceAllString(mapKV[1], "[]")
-	if byteFieldNameMap[mapKV[1]] != "" {
-		mapKV[1] = byteFieldNameMap[mapKV[1]]
-	} else if strings.Contains(mapKV[1], "[") {
-		mapKV[1] = "bytes"
-	} else if fieldTypeNameMap[mapKV[1]] != "" {
-		mapKV[1] = fieldTypeNameMap[mapKV[1]]
-	} else {
-		mapKV[1] = strings.ReplaceAll(mapKV[1], "*", "")
-	}
-
-	return fmt.Sprintf("map<%s,%s>", mapKeyTypeNameMap[mapKV[0]], mapKV[1]), nil
-}
-
-func parseBaseType(typeStr string) (baseTypes []string) {
+func parseFieldType(typeStr string) (typeName fieldTypeName, typ MessageFieldType, customTypeNames []string) {
 	typeStr = arrayReg.ReplaceAllString(typeStr, "[]")
-	typeStr = strings.ReplaceAll(typeStr, "map[", " ")
-	typeStr = strings.ReplaceAll(typeStr, "[]", " ")
-	typeStr = strings.ReplaceAll(typeStr, "]", " ")
-	typeStr = strings.ReplaceAll(typeStr, "*", " ")
-	typMap := make(map[string]bool)
-	for _, typ := range strings.Split(typeStr, " ") {
-		if typ == "" || typMap[typ] {
-			continue
+	typeStr = strings.Trim(typeStr, "*")
+	// slice
+	if strings.HasPrefix(typeStr, "[]") {
+		typeName, typ, customTypeNames = parseFieldType(strings.TrimPrefix(typeStr, "[]"))
+		if typ != MessageFieldTypeNormal {
+			typeName = fieldTypeName{
+				singular: "bytes",
+				plural:   "bytes",
+			}
 		}
-		baseTypes = append(baseTypes, typ)
-		typMap[typ] = true
+		typ = MessageFieldTypeSlice
+		return
+	}
+
+	// normal
+	if !strings.HasPrefix(typeStr, "map[") {
+		typ = MessageFieldTypeNormal
+		var exist bool
+		typeName, exist = fieldTypeNameMap[typeStr]
+		if !exist {
+			typeName = fieldTypeName{
+				singular: typeStr,
+				plural:   typeStr,
+			}
+			customTypeNames = append(customTypeNames, typeStr)
+		}
+		return
+	}
+
+	// map
+	typ = MessageFieldTypeMap
+	mapKey, mapVal, err := parseMapKeyAndValue(typeStr)
+	if err != nil {
+		panic(err)
+	}
+
+	// key
+	keyFieldTypeName, keyTyp, keyCustomTypes := parseFieldType(mapKey)
+	customTypeNames = append(customTypeNames, keyCustomTypes...)
+	if keyTyp == MessageFieldTypeNormal && mapKeyTypeNameMap[keyFieldTypeName.singular] != "" {
+		mapKey = mapKeyTypeNameMap[keyFieldTypeName.singular]
+	} else {
+		mapKey = "string"
+	}
+
+	// value
+	valFieldTypeName, valTyp, valCustomTypes := parseFieldType(mapVal)
+	customTypeNames = append(customTypeNames, valCustomTypes...)
+	if valTyp == MessageFieldTypeNormal {
+		mapVal = valFieldTypeName.singular
+	} else {
+		mapVal = "bytes"
+	}
+	typeName = fieldTypeName{
+		singular: fmt.Sprintf("map<%s,%s>", mapKey, mapVal),
+		plural:   fmt.Sprintf("map<%s,%s>", mapKey, mapVal),
 	}
 	return
+}
+
+func parseMapKeyAndValue(mapStr string) (string, string, error) {
+	if !strings.HasPrefix(mapStr, "map[") {
+		return "", "", fmt.Errorf("type %s is not a map type", mapStr)
+	}
+	if !strings.Contains(mapStr, "]") {
+		return "", "", fmt.Errorf("unsupported field type %s", mapStr)
+	}
+	var bracketCount int
+	for i, char := range mapStr {
+		if char == '[' {
+			bracketCount++
+			continue
+		}
+		if char != ']' {
+			continue
+		}
+		if bracketCount == 1 {
+			return mapStr[len("map["):i], mapStr[i+1:], nil
+		}
+		bracketCount--
+	}
+	return "", "", fmt.Errorf("unreachable code")
 }

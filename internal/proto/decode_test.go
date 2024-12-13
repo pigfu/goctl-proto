@@ -25,12 +25,13 @@ func TestUnmarshal(t *testing.T) {
 	t.Log(string(data))
 }
 
-func TestParseBaseType(t *testing.T) {
+func TestParseFieldType(t *testing.T) {
 	for _, str := range []string{
 		"map[[4]map[int]*ExtraInfo][]*string",
 	} {
-		for i, v := range parseBaseType(str) {
-			t.Logf("%d:%s", i, v)
-		}
+		typName, typ, customTyps := parseFieldType(str)
+		t.Logf("typName: %v", typName)
+		t.Logf("typ: %v", typ)
+		t.Logf("customTyps: %v", customTyps)
 	}
 }

@@ -72,7 +72,7 @@ func (f *File) Refine(includeRpcs, excludeRpcs []string) *File {
 		for _, rpc := range service.Rpcs {
 			messageUsage[rpc.Request.Name], messageUsage[rpc.Response.Name] = true, true
 			for _, field := range append(rpc.Request.Fields, rpc.Response.Fields...) {
-				for _, name := range field.BaseTypeNames {
+				for _, name := range field.CustomTypeNames {
 					messageUsage[name] = true
 				}
 			}

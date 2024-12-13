@@ -5,6 +5,14 @@ const (
 	Version3 = "proto3"
 )
 
+type MessageFieldType int32
+
+const (
+	MessageFieldTypeNormal MessageFieldType = iota + 1
+	MessageFieldTypeSlice
+	MessageFieldTypeMap
+)
+
 // File
 type File struct {
 	Syntax   string
@@ -26,11 +34,11 @@ type Message struct {
 }
 
 type MessageField struct {
-	Name          string
-	Descs         []string
-	TypeName      string
-	Repeated      bool
-	BaseTypeNames []string
+	Name            string
+	Descs           []string
+	TypeName        string
+	Repeated        bool
+	CustomTypeNames []string
 }
 
 type Service struct {
