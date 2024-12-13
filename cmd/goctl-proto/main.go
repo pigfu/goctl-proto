@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	buildTime string
+	buildTime    string
+	buildVersion string
 )
 
 func main() {

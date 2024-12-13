@@ -6,7 +6,7 @@ multi: build runm goctlm rpcm
 
 build:
 	go vet ./...
-	go build -ldflags "-X main.buildTime=`date +%Y-%m-%dT%H:%M:%S`" -o ./releases/goctl-proto ./cmd/goctl-proto
+	go build -ldflags "-X main.buildTime=`date +%Y-%m-%dT%H:%M:%S` -X main.buildVersion=`git describe --tags`" -o ./releases/goctl-proto ./cmd/goctl-proto
 
 run:
 	@if [ -x "./releases/goctl-proto" ]; \
