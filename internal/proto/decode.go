@@ -165,7 +165,14 @@ func (v *MessageField) Unmarshal(data any) error {
 		} else {
 			v.TypeName = typeName.singular
 		}
-		// todo: parse member.Tag
+		// parse tag
+		// todo: parse other tags
+		for _, tag := range val.Tags() {
+			switch tag.Key {
+			case "json":
+				v.Tags = append(v.Tags, fmt.Sprintf(`json_name = "%s"`, tag.Name))
+			}
+		}
 	default:
 		return fmt.Errorf("unsupported type %T, only supported *spec.Member", data)
 	}

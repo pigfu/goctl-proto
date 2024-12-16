@@ -39,6 +39,7 @@ type MessageField struct {
 	TypeName        string
 	Repeated        bool
 	CustomTypeNames []string
+	Tags            []string
 }
 
 type Service struct {

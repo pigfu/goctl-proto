@@ -26,7 +26,8 @@ message {{ title .Name }} { {{- if eq $fieldCount 0 -}} }{{ else }}
 {{- range .Descs }}
     // {{ . }}
 {{- end }}
-    {{ if .Repeated }}repeated {{ end }}{{ .TypeName }} {{ .Name }} = {{ add $index 1 }};
+{{- $tagCount := len .Tags }}
+    {{ if .Repeated }}repeated {{ end }}{{ .TypeName }} {{ .Name }} = {{ add $index 1 }}{{- if eq $tagCount 0 -}};{{ else }} [{{ join .Tags ", " }}];{{- end }}
 {{- end }}
 }
 {{- end }}
@@ -65,5 +66,8 @@ var funcMap = template.FuncMap{
 	}(),
 	"replace": func(s, old, new string) string {
 		return strings.ReplaceAll(s, old, new)
+	},
+	"join": func(s []string, sep string) string {
+		return strings.Join(s, sep)
 	},
 }
