@@ -58,20 +58,20 @@ option go_package = "/protoc-gen-go";
 
 message ExtraInfo {
     // 内容
-    string Content = 1;
+    string Content = 1 [json_name = "content"];
 }
 
 message Mock {
     // ID
-    int64 Id = 1;
+    int64 Id = 1 [json_name = "id"];
     // 名称
-    string Name = 2;
+    string Name = 2 [json_name = "name"];
     // 类型
-    int32 Type = 3;
+    int32 Type = 3 [json_name = "type"];
     // 标签列表
-    repeated string Tags = 4;
+    repeated string Tags = 4 [json_name = "tags"];
     // 额外信息
-    map<string,ExtraInfo> ExtraInfos = 5;
+    map<string,ExtraInfo> ExtraInfos = 5 [json_name = "extra_infos"];
 }
 
 service MockerApi {
@@ -103,6 +103,6 @@ goctl rpc protoc ./service.proto --go_out=./service --go-grpc_out=./service --zr
 ## TODO
 
 - 支持对proto中的service分组 ✅
-- 支持导出字段的tag
+- 支持导出字段除json外的其余tag
 - 导出rpc时更深度的清理未被使用的message ✅
 - 支持导出描述信息中包含@goctl-proto的rpc ✅
