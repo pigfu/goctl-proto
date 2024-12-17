@@ -157,7 +157,14 @@ func (v *MessageField) Unmarshal(data any) error {
 		if comment := strings.TrimSpace(strings.TrimPrefix(val.GetComment(), "//")); comment != "" {
 			v.Descs = append(v.Descs, comment)
 		}
-		typeName, typ, customTypes := parseFieldType(val.Type.Name())
+		// note: bug in parse spec.Member, val.Type.Name() may include comment information
+		var valTypeName string
+		if ft := strings.Fields(strings.TrimSpace(val.Type.Name())); len(ft) == 0 {
+			return fmt.Errorf("invalid type [%s]", val.Name)
+		} else {
+			valTypeName = ft[0]
+		}
+		typeName, typ, customTypes := parseFieldType(valTypeName)
 		v.CustomTypeNames = customTypes
 		if typ == MessageFieldTypeSlice {
 			v.Repeated = true
