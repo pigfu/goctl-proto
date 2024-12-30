@@ -1,12 +1,14 @@
 # 使用示例
 
-文件api/service.api和api/service@goctl-proto.api为以下示例所用到的api文件，工作目录为项目根目录。
+文件api/[service.api](https://github.com/liferod/goctl-proto/blob/main/example/api/service.api)和api/[service@goctl-proto.api](https://github.com/liferod/goctl-proto/blob/main/example/api/service@goctl-proto.api)为以下示例所用到的api文件，工作目录为项目根目录。
 
 ## 常规使用
 
 ```
 goctl-proto proto --input ./example/api/service.api --output ./example/proto
+```
 或者
+```
 goctl api plugin -plugin goctl-proto="proto" -api ./example/api/service.api -dir ./example/proto
 ```
 
@@ -16,7 +18,9 @@ goctl api plugin -plugin goctl-proto="proto" -api ./example/api/service.api -dir
 
 ```
 goctl-proto proto --input ./example/api/service.api --output ./example/proto --inc CreateMock --inc GetMock
+```
 或者
+```
 goctl api plugin -plugin goctl-proto="proto --inc CreateMock --inc GetMock" -api ./example/api/service.api -dir ./example/proto
 ```
 
@@ -26,7 +30,9 @@ goctl api plugin -plugin goctl-proto="proto --inc CreateMock --inc GetMock" -api
 
 ```
 goctl-proto proto --input ./example/api/service.api --output ./example/proto --exc Ping --exc GetMock
+```
 或者
+```
 goctl api plugin -plugin goctl-proto="proto --exc Ping --exc GetMock" -api ./example/api/service.api -dir ./example/proto
 ```
 
@@ -34,11 +40,13 @@ goctl api plugin -plugin goctl-proto="proto --exc Ping --exc GetMock" -api ./exa
 
 ## 使用@goctl-proto标识指定生成某个或某几个rpc
 
-service@goctl-proto.api中的“Ping”和“GetMock”这两个接口的描述中包含"@goctl-proto"，因此在不使用其它参数的情况下只会生成这两个接口的rpc信息。
+[service@goctl-proto.api](https://github.com/liferod/goctl-proto/blob/main/example/api/service@goctl-proto.api#L12)中的“Ping”和“GetMock”这两个接口的描述中包含"@goctl-proto"，因此在不使用其它参数的情况下只会生成这两个接口的rpc信息。
 
 ```
 goctl-proto proto --input ./example/api/service@goctl-proto.api --output ./example/proto
+```
 或者
+```
 goctl api plugin -plugin goctl-proto="proto" -api ./example/api/service@goctl-proto.api -dir ./example/proto
 ```
 
@@ -48,7 +56,9 @@ goctl api plugin -plugin goctl-proto="proto" -api ./example/api/service@goctl-pr
 
 ```
 goctl-proto proto --input ./example/api/service.api --output ./example/proto -m
+```
 或者
+```
 goctl api plugin -plugin goctl-proto="proto -m" -api ./example/api/service.api -dir ./example/proto
 ```
 
