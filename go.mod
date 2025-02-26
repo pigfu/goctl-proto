@@ -1,4 +1,4 @@
-module github.com/liferod/goctl-proto
+module github.com/pigfu/goctl-proto
 
 go 1.24
 

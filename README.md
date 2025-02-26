@@ -6,7 +6,7 @@
 
 ## 安装
 
-```go
+```sh
 go install github.com/pigfu/goctl-proto/cmd/goctl-proto@latest
 ```
 
