@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/liferod/goctl-proto/internal/proto"
+	"github.com/pigfu/goctl-proto/internal/proto"
 	"github.com/urfave/cli/v3"
 	"github.com/zeromicro/go-zero/tools/goctl/pkg/parser/api/parser"
 	"github.com/zeromicro/go-zero/tools/goctl/plugin"
