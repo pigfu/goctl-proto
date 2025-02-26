@@ -23,11 +23,8 @@ option {{ .Name }} = "{{ .Value }}";
 {{- $fieldCount := len .Fields }}
 message {{ title .Name }} { {{- if eq $fieldCount 0 -}} }{{ else }}
 {{- range $index,$value := .Fields }}
-{{- range .Descs }}
-    // {{ . }}
-{{- end }}
-{{- $tagCount := len .Tags }}
-    {{ if .Repeated }}repeated {{ end }}{{ .TypeName }} {{ .Name }} = {{ add $index 1 }}{{- if eq $tagCount 0 -}};{{ else }} [{{ join .Tags ", " }}];{{- end }}
+{{- $descCount := len .Descs }}
+    {{ if .Repeated }}repeated {{ end }}{{ .TypeName }} {{ .Name }} = {{ add $index 1 }}{{- if eq $descCount 0 -}};{{ else }} ;//{{ join .Descs "," }}{{- end }}
 {{- end }}
 }
 {{- end }}

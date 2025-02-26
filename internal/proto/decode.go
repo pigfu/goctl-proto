@@ -3,6 +3,8 @@ package proto
 import (
 	"fmt"
 	"github.com/zeromicro/go-zero/tools/goctl/api/spec"
+	"github.com/zeromicro/go-zero/tools/goctl/plugin"
+	"github.com/zeromicro/go-zero/tools/goctl/util/format"
 	"regexp"
 	"strings"
 )
@@ -73,19 +75,24 @@ var (
 
 func Unmarshal(data any, multiple bool) (f *File, err error) {
 	switch val := data.(type) {
-	case *spec.ApiSpec:
+	case plugin.Plugin:
+		var formatSrvName string
+		formatSrvName, err = format.FileNamingFormat(val.Style, val.Api.Service.Name)
+		if err != nil {
+			return nil, err
+		}
 		f = &File{
 			Syntax:  Version3,
-			Package: strings.ToLower(val.Service.Name),
+			Package: strings.ToLower(val.Api.Service.Name),
 			Options: []*Option{
 				{
 					Name:  "go_package",
-					Value: "/protoc-gen-go",
+					Value: "/" + formatSrvName + "Pb",
 				},
 			},
 		}
-		messageMap := make(map[string]*Message, len(val.Types))
-		for _, typ := range val.Types {
+		messageMap := make(map[string]*Message, len(val.Api.Types))
+		for _, typ := range val.Api.Types {
 			defineStruct, _ := typ.(spec.DefineStruct)
 			var message Message
 			message.Name = defineStruct.Name()
@@ -101,12 +108,12 @@ func Unmarshal(data any, multiple bool) (f *File, err error) {
 			messageMap[message.Name] = &message
 		}
 		serviceNameMap := make(map[string]int)
-		for _, group := range val.Service.JoinPrefix().Groups {
+		for _, group := range val.Api.Service.JoinPrefix().Groups {
 			var serviceName string
 			if groupName := group.GetAnnotation("group"); groupName != "" && multiple {
-				serviceName = val.Service.Name + "/" + groupName
+				serviceName = val.Api.Service.Name + "/" + groupName
 			} else {
-				serviceName = val.Service.Name
+				serviceName = val.Api.Service.Name
 			}
 			var srv *Service
 			if srvIndex, exist := serviceNameMap[serviceName]; exist {
@@ -171,14 +178,6 @@ func (v *MessageField) Unmarshal(data any) error {
 			v.TypeName = typeName.plural
 		} else {
 			v.TypeName = typeName.singular
-		}
-		// parse tag
-		// todo: parse other tags
-		for _, tag := range val.Tags() {
-			switch tag.Key {
-			case "json":
-				v.Tags = append(v.Tags, fmt.Sprintf(`json_name = "%s"`, tag.Name))
-			}
 		}
 	default:
 		return fmt.Errorf("unsupported type %T, only supported *spec.Member", data)

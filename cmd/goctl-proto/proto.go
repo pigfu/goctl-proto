@@ -13,7 +13,7 @@ import (
 	"strings"
 )
 
-func protoGen(ctx context.Context, command *cli.Command) (err error) {
+func protoGen(_ context.Context, command *cli.Command) (err error) {
 	output := command.String("output")
 	defer func() {
 		fmt.Print("Generate proto file")
@@ -31,7 +31,7 @@ func protoGen(ctx context.Context, command *cli.Command) (err error) {
 		if goctlPlugin.Api, err = parser.Parse(goctlPlugin.ApiFilePath, ""); err != nil {
 			return err
 		}
-	} else if plug, err := newPlugin(); err == nil {
+	} else if plug, err := plugin.NewPlugin(); err == nil {
 		goctlPlugin = *plug
 	} else {
 		return errors.New("api file not found, must set one of goctl -api or --input")
@@ -48,7 +48,7 @@ func protoGen(ctx context.Context, command *cli.Command) (err error) {
 		}
 		output = filepath.Join(output, strings.TrimSuffix(apiFile, filepath.Ext(apiFile))+".proto")
 	}
-	pf, err := proto.Unmarshal(goctlPlugin.Api, command.Bool("multiple"))
+	pf, err := proto.Unmarshal(goctlPlugin, command.Bool("multiple"))
 	if err != nil {
 		return err
 	}
@@ -60,13 +60,4 @@ func protoGen(ctx context.Context, command *cli.Command) (err error) {
 		return err
 	}
 	return
-}
-
-func newPlugin() (*plugin.Plugin, error) {
-	if stat, err := os.Stdin.Stat(); err != nil {
-		return nil, err
-	} else if stat.Size() <= 0 {
-		return nil, errors.New("empty stdin")
-	}
-	return plugin.NewPlugin()
 }
