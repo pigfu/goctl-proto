@@ -7,7 +7,7 @@
 ## 安装
 
 ```go
-go install github.com/liferod/goctl-proto/cmd/goctl-proto@latest
+go install github.com/pigfu/goctl-proto/cmd/goctl-proto@latest
 ```
 
 ## 示例
@@ -54,24 +54,18 @@ goctl api plugin -plugin goctl-proto="proto" -api ./service.api -dir .
 syntax = "proto3";
 
 package mocker.api;
-option go_package = "/protoc-gen-go";
+option go_package = "/mocker-apiPb";
 
 message ExtraInfo {
-    // 内容
-    string Content = 1 [json_name = "content"];
+    string Content = 1;// 内容
 }
 
 message Mock {
-    // ID
-    int64 Id = 1 [json_name = "id"];
-    // 名称
-    string Name = 2 [json_name = "name"];
-    // 类型
-    int32 Type = 3 [json_name = "type"];
-    // 标签列表
-    repeated string Tags = 4 [json_name = "tags"];
-    // 额外信息
-    map<string,ExtraInfo> ExtraInfos = 5 [json_name = "extra_infos"];
+    int64 Id = 1;// ID
+    string Name = 2;// 名称
+    int32 Type = 3; // 类型
+    repeated string Tags = 4;// 标签列表
+    map<string,ExtraInfo> ExtraInfos = 5;// 额外信息
 }
 
 service MockerApi {
@@ -86,7 +80,7 @@ service MockerApi {
 goctl rpc protoc ./service.proto --go_out=./service --go-grpc_out=./service --zrpc_out=./service --client=true
 ```
 
-更多示例[点击此处](https://github.com/liferod/goctl-proto/tree/main/example)。
+更多示例[点击此处](https://github.com/pigfu/goctl-proto/tree/main/example)。
 
 ## 存在的问题
 
