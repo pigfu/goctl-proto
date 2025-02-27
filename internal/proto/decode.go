@@ -111,7 +111,7 @@ func Unmarshal(data any, multiple bool) (f *File, err error) {
 		for _, group := range val.Api.Service.JoinPrefix().Groups {
 			var serviceName string
 			if groupName := group.GetAnnotation("group"); groupName != "" && multiple {
-				serviceName = val.Api.Service.Name + "/" + groupName
+				serviceName = groupName
 			} else {
 				serviceName = val.Api.Service.Name
 			}

@@ -13,6 +13,17 @@ import (
 	"strings"
 )
 
+func checkAndGenDir(dir string) error {
+	_, err := os.Stat(dir)
+	if err == nil {
+		return nil
+	}
+	if !os.IsNotExist(err) {
+		return err
+	}
+	return os.MkdirAll(dir, 0777)
+}
+
 func protoGen(_ context.Context, command *cli.Command) (err error) {
 	output := command.String("output")
 	defer func() {
@@ -36,18 +47,14 @@ func protoGen(_ context.Context, command *cli.Command) (err error) {
 	} else {
 		return errors.New("api file not found, must set one of goctl -api or --input")
 	}
-	if apiFile := filepath.Base(goctlPlugin.ApiFilePath); goctlPlugin.Dir != "" {
-		output = filepath.Join(goctlPlugin.Dir, strings.TrimSuffix(apiFile, filepath.Ext(apiFile))+".proto")
-	} else {
-		fi, err := os.Stat(output)
-		if err != nil {
-			return err
-		}
-		if !fi.IsDir() {
-			return errors.New("output is not a directory")
-		}
-		output = filepath.Join(output, strings.TrimSuffix(apiFile, filepath.Ext(apiFile))+".proto")
+	apiFile := filepath.Base(goctlPlugin.ApiFilePath)
+	if goctlPlugin.Dir != "" {
+		output = goctlPlugin.Dir
 	}
+	if err = checkAndGenDir(output); err != nil {
+		return err
+	}
+	output = filepath.Join(output, strings.TrimSuffix(apiFile, filepath.Ext(apiFile))+".proto")
 	pf, err := proto.Unmarshal(goctlPlugin, command.Bool("multiple"))
 	if err != nil {
 		return err
